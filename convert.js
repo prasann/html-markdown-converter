@@ -6,7 +6,7 @@ const fs = require("fs");
 
 function readOldContent() {
   const data = {};
-  const dir = "./../_posts_1";
+  const dir = "./data/inputs";
   fs.readdirSync(dir).forEach(filename => {
     const filepath = path.resolve(dir, filename);
     data[filename] = matter.read(filepath);
@@ -14,9 +14,7 @@ function readOldContent() {
   return data;
 }
 
-function processContent(parsedFileName, parsedHtml) {
-  const turndownService = new TurndownService();
-  const ymlMatter = parsedHtml.data;
+function topMatter(parsedFileName, ymlMatter) {
   const result = [];
   result.push("---");
   result.push(`date: ${parsedFileName.date}`);
@@ -24,20 +22,26 @@ function processContent(parsedFileName, parsedHtml) {
     result.push(`${key}: ${ymlMatter[key]}`);
   });
   result.push("---");
-  const topMatter = result.join("\r\n");
+  return result.join("\r\n");
+}
+
+function processContent(parsedFileName, parsedHtml) {
+  const turndownService = new TurndownService();
   return {
     markdown: turndownService.turndown(parsedHtml.content),
-    topMatter
+    topMatter: topMatter(parsedFileName, parsedHtml.data)
   };
 }
 
 function writeNewContent(parsedFileName, newContent) {
+  const dirName = "./data/outputs/"
   const finalContent = [newContent.topMatter, newContent.markdown].join("\r\n");
-  fs.writeFile(`${parsedFileName.slug}.md`, finalContent, function(err) {
+  const filepath = path.resolve(dirName, `${parsedFileName.slug}.md`);
+  fs.writeFile(filepath, finalContent, function(err) {
     if (err) {
       return console.log(err);
     }
-    console.log("The file was saved!");
+    console.log(`File: ${filepath} is saved !!`);
   });
 }
 

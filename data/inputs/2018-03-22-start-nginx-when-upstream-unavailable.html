@@ -1,0 +1,58 @@
+---
+layout: post
+title: Start nginx when upstream is unavailable
+categories:
+- Tech
+- nginx
+type: post
+published: true
+meta-robots: "noodp,noydir"
+meta-description: nginx will not start if one of the defined upstreams is not available. Here is a workaround to get through with those situations.
+meta-keywords: "nginx, upstream, failure, startup"
+---
+<div class="post">
+    <h3>
+        Upstreams in Nginx
+    </h3>
+    <p>
+        <span class="inline">upstream</span> is an nginx directive to define groups of servers. Servers can listen on differnt ports, and it is possible to mix and match the UNIX-domain sockets and TCP connections. You can read about it <a href="http://nginx.org/en/docs/http/ngx_http_upstream_module.html">here.</a>
+    </p>
+    <h3>Issue with upstream</h3>
+    <p>If you are using <span class="inline">proxy_pass</span> with upstream definitions in nginx config, then nginx checks for the server availability during the startup phase. A sample nginx.conf with upstream is here, lots of the .conf file is redacted to focus on the point in discussion.</p>
+    <pre class="prettyprint">
+    http {
+        ...
+        upstream service-a {
+            server service-a-ip-or-name:3000;
+        }
+        
+        server {
+            ...
+            location /service-a/ {
+                proxy_pass http://service-a/;
+            }
+        }
+    }
+    </pre>
+    <p>In the above mentioned scenario, nginx server will check for <span class="inline">service-a</span> while start-up phase. If service-a is down, you will see an error like <span class="inline">host not found in upstream service-a</span></p>
+    <h3>The Workaround</h3>
+    <p>
+        This workaround is for services running in local setup in different docker containers. So, instead of using upstream directive you can directly point your service-discoverable-name in the proxy pass. The only thing while running docker containers, you need to add an additional nginx directive <span class="inline">resolver</span> and make it point to docker's internal DNS resolver. <span class="inline">127.0.0.11</span> The above mentioned config can be re-written as mentioned.
+    </p>
+    <pre class="prettyprint">
+    http {
+        ...
+        resolver 127.0.0.11;
+        
+        server {
+            ...
+            location /service-a/ {
+                proxy_pass http://service-a-ip-or-name:3000/;
+            }
+        }
+    }
+    </pre>
+    <p>
+        <i>Note: nginx approach is very valid in production like setups. However, in developer boxes it may not be possible to have all the services running while nginx starts. The workaround mentioned here should be mostly used in local or in dev setup and not advisable to use in prodcution like setup.</i>
+    </p>
+</div>
