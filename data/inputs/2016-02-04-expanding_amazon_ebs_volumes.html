@@ -1,0 +1,50 @@
+---
+layout: post
+title: Expanding Amazon EBS Volume in a EC2 instance.
+categories:
+- Tech
+- AWS
+published: true
+meta-robots: "noodp,noydir"
+meta-description: Even after increasing the size of the EBS volume in the AWS console, the actual size of the EBS wasn't increased. Have to follow the following steps to grow the EBS size.
+meta-keywords: "EBS, AWS, EC2"
+meta:
+
+---
+<div class="post">
+  <p>
+    I had an AWS image which was created using an EC2 instance of size 8 GB. Whenever i try to launch an instance i
+    usually change the storage size to something say 20 GB. But once the system is launched when i do a
+  <pre class="prettyprint">df -h</pre>
+  i still see 8 GB and not 20 GB.
+  </p>
+  <p>
+    On further reading i understood i need to resize the disk size. So i did the same using
+  <pre class="prettyprint">sudo resize2fs /dev/xvde1</pre>
+  But i was getting the following error:
+    <pre class="prettyprint"> The filesystem is already *** blocks long. Nothing to do!
+</pre>
+  </p>
+  <p>Then to reolve this issue i have to perform the following steps.</p>
+  <ul>
+    <li>SSH to the machine.</li>
+    <pre class="prettyprint">fdisk /dev/xvde</pre>
+    <li>You should be seeing this message.</li>
+
+    <pre class="prettyprint">WARNING: DOS-compatible mode is deprecated. It's strongly recommended to switch off the mode (command 'c') and change display units to sectors (command 'u')</pre>
+    <li>Enter 'u' to change display units</li>
+    <li>Enter 'p' to view the current paritions.</li>
+    <li>Enter 'd' to delete current partitions.</li>
+    <li>Enter 'n' to create a new partition.</li>
+    <li>Enter 'p' to set it as primary partitions.</li>
+    <li>Enter '1' to set it as primary partitions.</li>
+    <li>Set the desired space. If nothing is given the entire space is allotted.</li>
+    <li>Enter 'a' to make it bootable.</li>
+    <li>Enter '1' and 'w' to write and save the changes.</li>
+    <li>Reboot the instance from AWS console.</li>
+    <li>Now if you resize the parition it worked all fine.</li>
+    <pre class="prettyprint">sudo resize2fs /dev/xvde1</pre>
+
+  </ul>
+  <p>Check the partition size, it should be all set with more space.</p>
+</div>

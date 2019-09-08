@@ -1,0 +1,101 @@
+---
+layout: post
+title: Writing Custom Tags for JSTLs
+categories:
+- Tech
+- Java
+tags: []
+status: publish
+type: post
+published: true
+meta-robots: "noodp,noydir"
+meta-description: Writing a custom JSTL tag and integrating with the application. A sample code to do the same.
+meta-keywords: "Custom, JSTL, Java"
+meta:
+  dsq_thread_id: '411196210'
+---
+<div class="post">
+<p>First start with writing a tag library descriptor(TLD). A TLD is a XML document that contains information about a library as a whole and about each tag contained in the library.<br />
+The structure of the TLD file is pretty readalbe.</p>
+<p>Below is an implementation of tag which takes in a section name(value) of a web page and checks whether the logged-in user has rights to view the section.</p>
+<p><span style="text-decoration: underline;"><strong>Step 1:</strong> custom.tld</span></p>
+<pre class="prettyprint">&lt;?xml version="1.0" encoding="ISO-8859-1" ?&gt;
+&lt;!DOCTYPE taglib PUBLIC "-//Sun Microsystems, Inc.//DTD JSP Tag Library 1.1//EN"
+        "http://java.sun.com/j2ee/dtds/web-jsptaglibrary_1_1.dtd"&gt;
+&lt;taglib xmlns="http://java.sun.com/j2ee/dtds/web-jsptaglibrary_1_1.dtd"&gt;
+    &lt;tlibversion&gt;1.0&lt;/tlibversion&gt;
+    &lt;jspversion&gt;1.1&lt;/jspversion&gt;
+    &lt;shortname&gt;custom&lt;/shortname&gt;
+    &lt;info&gt;Custom tag library&lt;/info&gt;
+    &lt;tag&gt;
+        &lt;name&gt;permission&lt;/name&gt;
+        &lt;tagclass&gt;com.prasans.PermissionTag&lt;/tagclass&gt;
+        &lt;info&gt;
+            Checks the User Permission to access the content.
+        &lt;/info&gt;
+        &lt;attribute&gt;
+            &lt;name&gt;value&lt;/name&gt;
+            &lt;required&gt;true&lt;/required&gt;
+        &lt;/attribute&gt;
+        &lt;attribute&gt;
+            &lt;name&gt;invertCondition&lt;/name&gt;
+            &lt;required&gt;false&lt;/required&gt;
+        &lt;/attribute&gt;
+    &lt;/tag&gt;
+&lt;/taglib&gt;</pre>
+<p>Here we have implemented a tag called permission within the 'custom' tag library.</p>
+<p>Usage: <em>&lt;custom:permission value=""&gt;{section}&lt;/custom:permission&gt;</em><br />
+Similarly you can add more tags to your library by adding more &lt;tag&gt; nodes.</p>
+<p>After done with defining TLD, next step is to implement the conditional logic. Below is a piece of Java code that does the implementation of the TLD.</p>
+<p><strong>Step 2: </strong><span style="text-decoration: underline;">PermissionTag.java</span></p>
+<pre class="prettyprint">package com.prasans;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.jsp.jstl.core.ConditionalTagSupport;
+
+public class PermissionTag extends ConditionalTagSupport {
+    private String value = null;
+    private boolean invertCondition;
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public boolean isInvertCondition() {
+        return invertCondition;
+    }
+
+    public void setInvertCondition(boolean invertCondition) {
+        this.invertCondition = invertCondition;
+    }
+
+    @Override
+    protected boolean condition() {
+        // If needed you can access Request Object like this.
+        HttpServletRequest request = (HttpServletRequest) pageContext.getRequest();
+        boolean permission = checkForThePermission(value);
+        return invertCondition ? !permission : permission;
+    }
+}</pre>
+<p><span style="text-decoration: underline;"><strong>Explanation:</strong></span></p>
+<p>* Since the expectation of this tag is to return true or false, we are extending the <em>ConditionalTagSupport</em> class. Based on the need you can choose upon your class implementation.</p>
+<p>*Note that all tag attributes are member variables of the class and all of them should have getters and setters.</p>
+<p>*Here we have overridden the condition() from ConditionalTagSupport to return the needed boolean result.</p>
+<p>* InvertCondition is an attribute that helps us in simulating negative scenarios.</p>
+<p>For ex: "Show the section <em>If User A do not have 'X' permission</em>"</p>
+<p>After building the TLD and its corresponding logic, the next step is to integrate with your application.<br />
+Add the custome tag library to your web.xml to integrate with your web app.</p>
+<p><strong>Step 3:</strong> <span style="text-decoration: underline;">web.xml</span></p>
+<pre class="prettyprint">&lt;jsp-config&gt;
+    &lt;taglib&gt;
+        &lt;taglib-uri&gt;/custom&lt;/taglib-uri&gt;
+        &lt;taglib-location&gt;/WEB-INF/tags/custom.tld&lt;/taglib-location&gt;
+    &lt;/taglib&gt;
+&lt;/jsp-config&gt;</pre>
+<p>The taglib-uri is the <em>&lt;shortname&gt;</em> defined in the TLD file. And <em>&lt;taglib-location&gt;</em> is the location of the tld. Make sure that you are bundling the TLD along with your WAR.</p>
+<p>Thats it. You can start using your custom tags in your JSPs now.</p>
+</div>

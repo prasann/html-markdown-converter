@@ -14,13 +14,14 @@ function readOldContent() {
   return data;
 }
 
-function topMatter(parsedFileName, ymlMatter) {
+function createTopMatter(parsedFileName, ymlMatter){
   const result = [];
   result.push("---");
-  result.push(`date: ${parsedFileName.date}`);
-  Object.keys(ymlMatter).map(key => {
-    result.push(`${key}: ${ymlMatter[key]}`);
-  });
+  result.push(`title: ${ymlMatter.title}`);
+  result.push(`menuTitle: ${ymlMatter.title}`);
+  result.push(`subTitle: ${ymlMatter['meta-description']}`);
+  result.push(`postDescription: ${ymlMatter['meta-description']}`);
+  result.push(`category: ${ymlMatter['categories']}`);
   result.push("---");
   return result.join("\r\n");
 }
@@ -29,14 +30,20 @@ function processContent(parsedFileName, parsedHtml) {
   const turndownService = new TurndownService();
   return {
     markdown: turndownService.turndown(parsedHtml.content),
-    topMatter: topMatter(parsedFileName, parsedHtml.data)
+    topMatter: createTopMatter(parsedFileName, parsedHtml.data)
   };
 }
 
 function writeNewContent(parsedFileName, newContent) {
   const dirName = "./data/outputs/"
+  const postsDir = `${parsedFileName.date}--${parsedFileName.slug}`
   const finalContent = [newContent.topMatter, newContent.markdown].join("\r\n");
-  const filepath = path.resolve(dirName, `${parsedFileName.slug}.md`);
+  fs.mkdir(`${dirName}/${postsDir}`, function(err) {
+    if (err) {
+      return console.log(err);
+    }
+  })
+  const filepath = path.resolve(`${dirName}/${postsDir}`, `index.md`);
   fs.writeFile(filepath, finalContent, function(err) {
     if (err) {
       return console.log(err);
@@ -47,6 +54,7 @@ function writeNewContent(parsedFileName, newContent) {
 
 function parseOldFileName(fileName) {
   const parsedInfo = fileName.match(/^([0-9]*-[0-9]*-[0-9]*)-(.*).html$/);
+  console.log(parsedInfo, fileName)
   return { date: parsedInfo[1], slug: parsedInfo[2] };
 }
 
